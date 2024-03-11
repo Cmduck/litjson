@@ -216,7 +216,7 @@ namespace LitJson
                     if (parameters.Length != 1)
                         continue;
 
-                    if (parameters[0].ParameterType == typeof (string))
+                    if (parameters[0].ParameterType == typeof (string) || parameters[0].ParameterType == typeof(int))
                         data.ElementType = p_info.PropertyType;
 
                     continue;
@@ -427,6 +427,15 @@ namespace LitJson
 
                 instance = Activator.CreateInstance (value_type);
 
+
+                bool isIntKey = false;
+                if (t_data.IsDictionary) {
+                    var args = value_type.GetGenericArguments();
+                    if (args.Length > 0 && value_type.GetGenericArguments()[0] == typeof(int)) {
+                        isIntKey = true;
+                    }
+                }
+
                 while (true) {
                     reader.Read ();
 
@@ -469,9 +478,14 @@ namespace LitJson
                             }
                         }
 
-                        ((IDictionary) instance).Add (
-                            property, ReadValue (
-                                t_data.ElementType, reader));
+                        //((IDictionary) instance).Add (
+                        //    property, ReadValue (
+                        //        t_data.ElementType, reader));
+                        if (isIntKey) {
+                            ((IDictionary)instance).Add(Convert.ToInt32(property), ReadValue(t_data.ElementType, reader));
+                        } else {
+                            ((IDictionary)instance).Add(property, ReadValue(t_data.ElementType, reader));
+                        }
                     }
 
                 }
@@ -738,6 +752,7 @@ namespace LitJson
                 else
                     ((IJsonWrapper) obj).ToJson (writer);
 
+                writer.ClearExpectingValue();
                 return;
             }
 
